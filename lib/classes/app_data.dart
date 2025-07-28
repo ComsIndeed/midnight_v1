@@ -33,7 +33,7 @@ class AppData with ChangeNotifier {
   }
 
   GenerateQuizResponse generateQuiz(Content userMessage) {
-    final generateQuizResponse = Inference.generateQuiz(userMessage);
+    final generateQuizResponse = Inference.generateQuiz(userMessage, []);
     generateQuizResponse.quiz.then((quiz) {
       quizzes.add(quiz);
       saveQuizzes();
