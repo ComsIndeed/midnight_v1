@@ -32,7 +32,7 @@ class Quiz {
           return QuizQuestion.fromMap(q);
         }
       }).toList(),
-      sources: map['sources'],
+      sources: map['sources'] ?? [],
     );
   }
 
