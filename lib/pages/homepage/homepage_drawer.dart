@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:midnight_v1/classes/app_data.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:midnight_v1/blocs/quizzes_bloc/quizzes_bloc.dart';
 import 'package:midnight_v1/classes/quiz.dart';
 
 class HomepageDrawer extends StatelessWidget {
@@ -8,7 +8,6 @@ class HomepageDrawer extends StatelessWidget {
 
   static void showQuizMenuOverlay(
     BuildContext context,
-    AppData appData,
     Quiz quiz,
     Offset position,
   ) {
@@ -27,8 +26,8 @@ class HomepageDrawer extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   ListTile(
-                    leading: Icon(Icons.edit),
-                    title: Text('Rename'),
+                    leading: const Icon(Icons.edit),
+                    title: const Text('Rename'),
                     onTap: () async {
                       entry.remove();
                       final newTitle = await HomepageDrawer.showRenameDialog(
@@ -36,24 +35,16 @@ class HomepageDrawer extends StatelessWidget {
                         quiz.title,
                       );
                       if (newTitle != null && newTitle.isNotEmpty) {
-                        await appData.renameQuiz(quiz, newTitle);
+                        context.read<QuizzesBloc>().add(RenameQuiz(quiz, newTitle));
                       }
                     },
                   ),
                   ListTile(
-                    leading: Icon(Icons.refresh),
-                    title: Text('Regenerate'),
+                    leading: const Icon(Icons.delete),
+                    title: const Text('Delete'),
                     onTap: () async {
                       entry.remove();
-                      await appData.regenerateQuiz(quiz);
-                    },
-                  ),
-                  ListTile(
-                    leading: Icon(Icons.delete),
-                    title: Text('Delete'),
-                    onTap: () async {
-                      entry.remove();
-                      await appData.deleteQuiz(quiz);
+                      context.read<QuizzesBloc>().add(DeleteQuiz(quiz));
                     },
                   ),
                 ],
@@ -74,19 +65,19 @@ class HomepageDrawer extends StatelessWidget {
     return showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('Rename Quiz'),
+        title: const Text('Rename Quiz'),
         content: TextField(
           controller: controller,
-          decoration: InputDecoration(hintText: 'New quiz title'),
+          decoration: const InputDecoration(hintText: 'New quiz title'),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text('Cancel'),
+            child: const Text('Cancel'),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, controller.text),
-            child: Text('Rename'),
+            child: const Text('Rename'),
           ),
         ],
       ),
@@ -95,8 +86,6 @@ class HomepageDrawer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final appData = Provider.of<AppData>(context);
-
     return Drawer(
       child: Column(
         children: [
@@ -109,63 +98,69 @@ class HomepageDrawer extends StatelessWidget {
               },
             ),
           ),
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
           ListTile(
-            title: Text("Account"),
-            leading: Icon(Icons.person),
+            title: const Text("Account"),
+            leading: const Icon(Icons.person),
             onTap: () {},
           ),
           ListTile(
-            title: Text("Settings"),
-            leading: Icon(Icons.settings),
+            title: const Text("Settings"),
+            leading: const Icon(Icons.settings),
             onTap: () => Navigator.of(context).pushNamed("/settings"),
           ),
-          Divider(),
-          SingleChildScrollView(
-            child: Column(
-              children: appData.quizzes
-                  .map(
-                    (quiz) => Builder(
-                      builder: (itemContext) {
-                        return InkWell(
-                          onTap: () => Navigator.of(
-                            context,
-                          ).pushNamed("/quiz", arguments: quiz),
-                          onSecondaryTap: () {
-                            // Desktop right click
-                            final box =
-                                itemContext.findRenderObject() as RenderBox?;
-                            final position =
-                                box?.localToGlobal(Offset.zero) ?? Offset.zero;
-                            HomepageDrawer.showQuizMenuOverlay(
-                              context,
-                              appData,
-                              quiz,
-                              position + Offset(box?.size.width ?? 0, 0),
-                            );
-                          },
-                          onLongPress: () {
-                            // Mobile long press
-                            final box =
-                                itemContext.findRenderObject() as RenderBox?;
-                            final position =
-                                box?.localToGlobal(Offset.zero) ?? Offset.zero;
-                            HomepageDrawer.showQuizMenuOverlay(
-                              context,
-                              appData,
-                              quiz,
-                              position + Offset(box?.size.width ?? 0, 0),
-                            );
-                          },
-                          child: ListTile(title: Text(quiz.title)),
-                        );
-                      },
-                    ),
-                  )
-                  .toList()
-                  .reversed
-                  .toList(),
-            ),
+          const Divider(),
+          BlocBuilder<QuizzesBloc, QuizzesState>(
+            builder: (context, state) {
+              if (state is QuizzesLoadSuccess) {
+                return SingleChildScrollView(
+                  child: Column(
+                    children: state.quizzes
+                        .map(
+                          (quiz) => Builder(
+                            builder: (itemContext) {
+                              return InkWell(
+                                onTap: () => Navigator.of(
+                                  context,
+                                ).pushNamed("/quiz", arguments: quiz),
+                                onSecondaryTap: () {
+                                  // Desktop right click
+                                  final box =
+                                      itemContext.findRenderObject() as RenderBox?;
+                                  final position =
+                                      box?.localToGlobal(Offset.zero) ?? Offset.zero;
+                                  HomepageDrawer.showQuizMenuOverlay(
+                                    context,
+                                    quiz,
+                                    position + Offset(box?.size.width ?? 0, 0),
+                                  );
+                                },
+                                onLongPress: () {
+                                  // Mobile long press
+                                  final box =
+                                      itemContext.findRenderObject() as RenderBox?;
+                                  final position =
+                                      box?.localToGlobal(Offset.zero) ?? Offset.zero;
+                                  HomepageDrawer.showQuizMenuOverlay(
+                                    context,
+                                    quiz,
+                                    position + Offset(box?.size.width ?? 0, 0),
+                                  );
+                                },
+                                child: ListTile(title: Text(quiz.title)),
+                              );
+                            },
+                          ),
+                        )
+                        .toList()
+                        .reversed
+                        .toList(),
+                  ),
+                );
+              } else {
+                return const SizedBox.shrink();
+              }
+            },
           ),
         ],
       ),

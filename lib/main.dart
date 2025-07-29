@@ -1,25 +1,42 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_displaymode/flutter_displaymode.dart';
-import 'package:midnight_v1/classes/app_data.dart';
+import 'package:midnight_v1/blocs/quiz_page_bloc/quiz_page_bloc.dart';
+import 'package:midnight_v1/blocs/quizzes_bloc/quizzes_bloc.dart';
 import 'package:midnight_v1/classes/app_prefs.dart';
 import 'package:midnight_v1/classes/quiz.dart';
 import 'package:midnight_v1/pages/homepage/homepage.dart';
 import 'package:midnight_v1/pages/quiz_page/quiz_page.dart';
 import 'package:midnight_v1/pages/settings_page/settings_page.dart';
-import 'package:provider/provider.dart';
+import 'package:midnight_v1/repositories/quiz_repository.dart';
 import 'package:responsive_framework/responsive_framework.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:io';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await FlutterDisplayMode.setHighRefreshRate();
+  if (Platform.isAndroid) {
+    await FlutterDisplayMode.setHighRefreshRate();
+  }
 
   final prefs = await AppPrefs().init();
-  final appData = AppData(prefs);
+  final quizRepository = QuizRepository(prefs);
 
   runApp(
-    MultiProvider(
-      providers: [ChangeNotifierProvider.value(value: appData)],
-      child: const MainApp(),
+    MultiRepositoryProvider(
+      providers: [
+        RepositoryProvider.value(value: quizRepository),
+        RepositoryProvider.value(value: prefs),
+      ],
+      child: MultiBlocProvider(
+        providers: [
+          BlocProvider(
+            create: (context) =>
+                QuizzesBloc(context.read<QuizRepository>())..add(LoadQuizzes()),
+          ),
+        ],
+        child: const MainApp(),
+      ),
     ),
   );
 }
@@ -31,11 +48,16 @@ class MainApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       routes: {
-        "/": (context) => Homepage(),
-        "/settings": (context) => SettingsPage(),
+        "/": (context) => const Homepage(),
+        "/settings": (context) => const SettingsPage(),
         "/quiz": (context) {
           final quiz = ModalRoute.of(context)?.settings.arguments as Quiz;
-          return QuizPage(quiz: quiz);
+          return BlocProvider(
+            create: (context) =>
+                QuizPageBloc(context.read<SharedPreferences>())
+                  ..add(LoadQuizProgress(quiz)),
+            child: QuizPage(quiz: quiz),
+          );
         },
       },
       builder: (context, child) => ResponsiveBreakpoints.builder(

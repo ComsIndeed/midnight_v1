@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:midnight_v1/classes/app_data.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:midnight_v1/blocs/quizzes_bloc/quizzes_bloc.dart';
 import 'package:midnight_v1/pages/settings_page/gemini_api_key_field.dart';
 
 class SettingsPage extends StatelessWidget {
@@ -9,41 +9,39 @@ class SettingsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Settings')),
+      appBar: AppBar(title: const Text('Settings')),
       body: SingleChildScrollView(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.start,
           children: [
-            GeminiApiKeyField(),
+            const GeminiApiKeyField(),
             ListTile(
-              title: Text("Clear quizzes"),
-              leading: Icon(Icons.delete),
+              title: const Text("Clear quizzes"),
+              leading: const Icon(Icons.delete),
               onTap: () async {
                 final confirmed = await showDialog<bool>(
                   context: context,
                   builder: (context) => AlertDialog(
-                    title: Text('Confirm'),
-                    content: Text(
+                    title: const Text('Confirm'),
+                    content: const Text(
                       'Are you sure you want to clear all quizzes? This action cannot be undone.',
                     ),
                     actions: [
                       TextButton(
                         onPressed: () => Navigator.of(context).pop(false),
-                        child: Text('Cancel'),
+                        child: const Text('Cancel'),
                       ),
                       TextButton(
                         onPressed: () => Navigator.of(context).pop(true),
-                        child: Text('Clear'),
+                        child: const Text('Clear'),
                       ),
                     ],
                   ),
                 );
                 if (confirmed == true) {
-                  // Get AppData from Provider and clear quizzes
-                  final appData = Provider.of<AppData>(context, listen: false);
-                  await appData.clearAllQuizzes();
+                  context.read<QuizzesBloc>().add(ClearAllQuizzes());
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('All quizzes cleared.')),
+                    const SnackBar(content: Text('All quizzes cleared.')),
                   );
                 }
               },

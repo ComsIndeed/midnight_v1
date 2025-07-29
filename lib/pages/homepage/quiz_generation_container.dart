@@ -3,11 +3,11 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
-import 'package:midnight_v1/classes/app_data.dart';
+import 'package:midnight_v1/blocs/quizzes_bloc/quizzes_bloc.dart';
 import 'package:path/path.dart' as p;
 import 'package:file_picker/file_picker.dart';
-import 'package:provider/provider.dart';
 
 class QuizGenerationContainer extends StatefulWidget {
   const QuizGenerationContainer({super.key});
@@ -20,7 +20,6 @@ class QuizGenerationContainer extends StatefulWidget {
 class _QuizGenerationContainerState extends State<QuizGenerationContainer>
     with SingleTickerProviderStateMixin {
   final controller = TextEditingController();
-  final progressStreamController = StreamController<String>.broadcast();
   List<File> files = [];
   String controllerTextSnapshot = "";
   bool isGenerating = false;
@@ -28,6 +27,7 @@ class _QuizGenerationContainerState extends State<QuizGenerationContainer>
   late AnimationController _shadowController;
   late Animation<Color?> _colorAnimation;
   late Animation<double> _blurAnimation;
+  StreamSubscription<String>? _progressSubscription;
 
   final List<Color> _shadowColors = [
     Colors.pinkAccent,
@@ -65,10 +65,10 @@ class _QuizGenerationContainerState extends State<QuizGenerationContainer>
   void dispose() {
     _shadowController.dispose();
     controller.dispose();
+    _progressSubscription?.cancel();
     super.dispose();
   }
 
-  /// Returns a list of maps: { 'mimetype': String, 'bytes': Uint8List }
   Future<List<Map<String, dynamic>>> getFileBytesAndMimeTypes() async {
     List<Map<String, dynamic>> result = [];
     for (final file in files) {
@@ -180,22 +180,21 @@ class _QuizGenerationContainerState extends State<QuizGenerationContainer>
           width: double.infinity,
           height: double.infinity,
           errorBuilder: (c, e, s) =>
-              Icon(Icons.broken_image, color: Colors.white54, size: 32),
+              const Icon(Icons.broken_image, color: Colors.white54, size: 32),
         ),
       );
     } else if (isVideo) {
-      content = Stack(
+      content = const Stack(
         alignment: Alignment.center,
         children: [
-          Container(
-            color: Colors.black26,
+          SizedBox(
             child: Icon(Icons.videocam, color: Colors.white54, size: 40),
           ),
           Icon(Icons.play_circle_fill, color: Colors.white, size: 48),
         ],
       );
     } else if (isPdf) {
-      content = Column(
+      content = const Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(Icons.picture_as_pdf, color: Colors.red, size: 32),
@@ -221,12 +220,14 @@ class _QuizGenerationContainerState extends State<QuizGenerationContainer>
       );
     } else {
       content = Center(
-        child: Text(ext.toUpperCase(), style: TextStyle(color: Colors.white70)),
+        child: Text(
+          ext.toUpperCase(),
+          style: const TextStyle(color: Colors.white70),
+        ),
       );
     }
 
     return Stack(
-      // TODO: Fix the dimensions
       children: [
         Container(
           width: 120,
@@ -245,9 +246,9 @@ class _QuizGenerationContainerState extends State<QuizGenerationContainer>
           top: 0,
           right: 0,
           child: IconButton(
-            icon: Icon(Icons.close, color: Colors.white, size: 18),
+            icon: const Icon(Icons.close, color: Colors.white, size: 18),
             padding: EdgeInsets.zero,
-            constraints: BoxConstraints(),
+            constraints: const BoxConstraints(),
             splashRadius: 16,
             onPressed: () => removeFile(file),
             tooltip: 'Remove',
@@ -257,122 +258,131 @@ class _QuizGenerationContainerState extends State<QuizGenerationContainer>
     );
   }
 
-  Future<void> generateQuiz(AppData appData) async {
+  Future<void> generateQuiz() async {
     if (isGenerating) return;
     setState(() => isGenerating = true);
     try {
       final fileData = await getFileBytesAndMimeTypes();
-      final generateQuizResponse = appData.generateQuiz(
-        Content("user", [
-          if (controller.text.isNotEmpty) TextPart(controller.text),
-          ...fileData.map(
-            (data) => InlineDataPart(
-              data['mimetype'] as String,
-              data['bytes'] as Uint8List,
-            ),
+      final content = Content("user", [
+        if (controller.text.isNotEmpty) TextPart(controller.text),
+        ...fileData.map(
+          (data) => InlineDataPart(
+            data['mimetype'] as String,
+            data['bytes'] as Uint8List,
           ),
-        ]),
-      );
+        ),
+      ]);
+      context.read<QuizzesBloc>().add(GenerateQuiz(content));
       controllerTextSnapshot = controller.text;
       controller.clear();
-      generateQuizResponse.progressText.listen(
-        (text) => progressStreamController.add(text),
-      );
-      final quiz = await generateQuizResponse.quiz;
-      print(quiz);
-      setState(() => isGenerating = false);
-      files.clear();
     } catch (e, st) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
+      ).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
       print("$e\n$st");
-    } finally {
       setState(() => isGenerating = false);
-      controller.clear();
-      files.clear();
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final sizes = MediaQuery.sizeOf(context);
-    final appData = Provider.of<AppData>(context);
     final isMobile = sizes.width < 600;
-    return AnimatedBuilder(
-      animation: _shadowController,
-      builder: (context, child) {
-        return AnimatedContainer(
-          duration: Durations.medium1,
-          width: isMobile ? sizes.width * 0.9 : sizes.width * 0.6,
-          decoration: BoxDecoration(
-            color: Colors.grey.shade900,
-            borderRadius: BorderRadius.circular(64),
-            boxShadow: [
-              if (isGenerating)
-                BoxShadow(
-                  color: _colorAnimation.value ?? Colors.pinkAccent,
-                  blurRadius: _blurAnimation.value,
-                ),
-            ],
-          ),
-          child: Padding(
-            padding: EdgeInsets.all(isMobile ? 2.0 : 8.0),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    IconButton(
-                      onPressed: isGenerating ? null : addFiles,
-                      icon: Icon(Icons.add),
-                      tooltip: 'Add files (PDF, images, audio, video)',
-                    ),
-                    Expanded(
-                      child: StreamBuilder<String>(
-                        stream: progressStreamController.stream,
-                        builder: (context, snapshot) => TextField(
+    return BlocListener<QuizzesBloc, QuizzesState>(
+      listener: (context, state) {
+        if (state is QuizzesLoadSuccess || state is QuizzesLoadFailure) {
+          if (isGenerating) {
+            setState(() {
+              isGenerating = false;
+              files.clear();
+            });
+          }
+        } else if (state is QuizGenerationInProgress) {
+          if (!isGenerating) {
+            setState(() {
+              isGenerating = true;
+            });
+          }
+          _progressSubscription?.cancel();
+          _progressSubscription = state.progressStream.listen((text) {
+            setState(() {
+              controllerTextSnapshot = text;
+            });
+          });
+        }
+      },
+      child: AnimatedBuilder(
+        animation: _shadowController,
+        builder: (context, child) {
+          return AnimatedContainer(
+            duration: Durations.medium1,
+            width: isMobile ? sizes.width * 0.9 : sizes.width * 0.6,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade900,
+              borderRadius: BorderRadius.circular(64),
+              boxShadow: [
+                if (isGenerating)
+                  BoxShadow(
+                    color: _colorAnimation.value ?? Colors.pinkAccent,
+                    blurRadius: _blurAnimation.value,
+                  ),
+              ],
+            ),
+            child: Padding(
+              padding: EdgeInsets.all(isMobile ? 2.0 : 8.0),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      IconButton(
+                        onPressed: isGenerating ? null : addFiles,
+                        icon: const Icon(Icons.add),
+                        tooltip: 'Add files (PDF, images, audio, video)',
+                      ),
+                      Expanded(
+                        child: TextField(
                           enabled: !isGenerating,
-                          onSubmitted: (_) => generateQuiz(appData),
+                          onSubmitted: (_) => generateQuiz(),
                           controller: controller,
                           decoration: InputDecoration(
                             hintText: isGenerating
-                                ? "$controllerTextSnapshot ${snapshot.data ?? ""}"
+                                ? "$controllerTextSnapshot..."
                                 : "Generate me a quiz about...",
                             border: InputBorder.none,
                           ),
                         ),
                       ),
-                    ),
-                    IconButton.filled(
-                      onPressed: isGenerating
-                          ? null
-                          : () => generateQuiz(appData),
-                      icon: Icon(Icons.send),
-                    ),
-                  ],
-                ),
-                if (files.isNotEmpty)
-                  Container(
-                    margin: const EdgeInsets.only(top: 8),
-                    child: SizedBox(
-                      height: 80,
-                      child: GridView.builder(
-                        scrollDirection: Axis.horizontal,
-                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 1,
-                          childAspectRatio: 4 / 3,
-                          mainAxisSpacing: 4,
+                      IconButton.filled(
+                        onPressed: isGenerating ? null : generateQuiz,
+                        icon: const Icon(Icons.send),
+                      ),
+                    ],
+                  ),
+                  if (files.isNotEmpty)
+                    Container(
+                      margin: const EdgeInsets.only(top: 8),
+                      child: SizedBox(
+                        height: 80,
+                        child: GridView.builder(
+                          scrollDirection: Axis.horizontal,
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 1,
+                                childAspectRatio: 4 / 3,
+                                mainAxisSpacing: 4,
+                              ),
+                          itemCount: files.length,
+                          itemBuilder: (context, idx) =>
+                              buildFileBox(files[idx]),
                         ),
-                        itemCount: files.length,
-                        itemBuilder: (context, idx) => buildFileBox(files[idx]),
                       ),
                     ),
-                  ),
-              ],
+                ],
+              ),
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 }
