@@ -24,8 +24,33 @@ jobs:
       - name: Build APK
         run: flutter build apk --release
 
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
+      - name: Get current date
+        id: date
+        run: echo "DATE=$(date +'%Y%m%d%H%M')" >> $GITHUB_ENV
+
+      - name: Rename APK
+        id: rename
+        run: |
+          mv build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/midnightv1_release_${{ env.DATE }}.apk
+          echo "APK_NAME=midnightv1_release_${{ env.DATE }}.apk" >> $GITHUB_ENV
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          name: release-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
+          tag_name: build-${{ env.DATE }}
+          release_name: Midnight v1 Release ${{ env.DATE }}
+          draft: false
+          prerelease: false
+
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: build/app/outputs/flutter-apk/${{ env.APK_NAME }}
+          asset_name: ${{ env.APK_NAME }}
+          asset_content_type: application/vnd.android.package-archive
