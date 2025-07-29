@@ -18,24 +18,22 @@ class QuizProgress {
   QuizProgress({required this.userAnswers, required this.correctness});
 
   Map<String, dynamic> toMap() => {
-        'userAnswers': userAnswers.map((k, v) => MapEntry(k.toString(), v)),
-        'correctness': correctness.map((k, v) => MapEntry(k.toString(), v)),
-      };
+    'userAnswers': userAnswers.map((k, v) => MapEntry(k.toString(), v)),
+    'correctness': correctness.map((k, v) => MapEntry(k.toString(), v)),
+  };
 
   factory QuizProgress.fromMap(Map<String, dynamic> map) => QuizProgress(
-        userAnswers: Map<String, dynamic>.from(map['userAnswers'] ?? {})
-            .entries
-            .fold<Map<int, String>>({}, (acc, e) {
+    userAnswers: Map<String, dynamic>.from(map['userAnswers'] ?? {}).entries
+        .fold<Map<int, String>>({}, (acc, e) {
           acc[int.parse(e.key)] = e.value as String;
           return acc;
         }),
-        correctness: Map<String, dynamic>.from(map['correctness'] ?? {})
-            .entries
-            .fold<Map<int, bool>>({}, (acc, e) {
+    correctness: Map<String, dynamic>.from(map['correctness'] ?? {}).entries
+        .fold<Map<int, bool>>({}, (acc, e) {
           acc[int.parse(e.key)] = e.value as bool;
           return acc;
         }),
-      );
+  );
 
   String toJson() => jsonEncode(toMap());
 
@@ -94,24 +92,33 @@ class QuizPage extends StatelessWidget {
                                   isGenerating = true;
                                 });
                                 try {
-                                  final incorrectIndices = state.progress.correctness.entries
+                                  final incorrectIndices = state
+                                      .progress
+                                      .correctness
+                                      .entries
                                       .where((e) => e.value == false)
                                       .map((e) => e.key)
                                       .toList();
-                                  final incorrectQuestions = incorrectIndices.map((i) {
-                                    final q = state.quiz.questions[i];
-                                    return {
-                                      'index': i + 1,
-                                      'question': q.question,
-                                      if (q is MultipleChoiceQuizQuestion)
-                                        'options': q.options.map((o) => o.text).toList(),
-                                      'correctAnswer': q.answer,
-                                      'userAnswer': state.progress.userAnswers[i],
-                                    };
-                                  }).toList();
+                                  final incorrectQuestions = incorrectIndices
+                                      .map((i) {
+                                        final q = state.quiz.questions[i];
+                                        return {
+                                          'index': i + 1,
+                                          'question': q.question,
+                                          if (q is MultipleChoiceQuizQuestion)
+                                            'options': q.options
+                                                .map((o) => o.text)
+                                                .toList(),
+                                          'correctAnswer': q.answer,
+                                          'userAnswer':
+                                              state.progress.userAnswers[i],
+                                        };
+                                      })
+                                      .toList();
                                   final progressSummary = {
                                     'incorrectQuestions': incorrectQuestions,
-                                    'totalQuestions': state.quiz.questions.length,
+                                    'totalQuestions':
+                                        state.quiz.questions.length,
                                     'correctCount': state.correctCount,
                                     'incorrectCount': state.incorrectCount,
                                     'unansweredCount': state.unansweredCount,
@@ -124,24 +131,23 @@ class QuizPage extends StatelessWidget {
                                   final response = Inference.generateQuestions(
                                     userMessage,
                                   );
-                                  progressStreamController = StreamController<String>.broadcast();
+                                  progressStreamController =
+                                      StreamController<String>.broadcast();
                                   response.progressText.listen((text) {
-                                    if (progressStreamController != null && !progressStreamController!.isClosed) {
+                                    if (progressStreamController != null &&
+                                        !progressStreamController!.isClosed) {
                                       progressStreamController!.add(text);
                                     }
                                   });
                                   final newQuestions = await response.questions;
-                                  // This part needs to be handled by the BLoC now
-                                  // setState(() {
-                                  //   widget.quiz.addQuestions(newQuestions);
-                                  //   _updateCounters();
-                                  // });
-                                  if (progressStreamController != null && !progressStreamController!.isClosed) {
+                                  if (progressStreamController != null &&
+                                      !progressStreamController!.isClosed) {
                                     progressStreamController!.close();
                                   }
                                   Navigator.of(context).pop();
                                 } catch (e) {
-                                  if (progressStreamController != null && !progressStreamController!.isClosed) {
+                                  if (progressStreamController != null &&
+                                      !progressStreamController!.isClosed) {
                                     progressStreamController!.add(
                                       "Error: ${e.toString()}",
                                     );
@@ -154,7 +160,9 @@ class QuizPage extends StatelessWidget {
                               },
                         child: Text(
                           isGenerating
-                              ? (progressText.isNotEmpty ? progressText : "Generating...")
+                              ? (progressText.isNotEmpty
+                                    ? progressText
+                                    : "Generating...")
                               : "Generate",
                         ),
                       ),
@@ -175,7 +183,9 @@ class QuizPage extends StatelessWidget {
     return BlocBuilder<QuizPageBloc, QuizPageState>(
       builder: (context, state) {
         if (state is QuizPageLoadInProgress) {
-          return const Scaffold(body: Center(child: CircularProgressIndicator()));
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
         } else if (state is QuizPageLoadFailure) {
           return Scaffold(body: Center(child: Text(state.error)));
         } else if (state is QuizPageLoadSuccess) {
@@ -209,7 +219,10 @@ class QuizPage extends StatelessWidget {
                             const SizedBox(width: 4),
                             Text(
                               state.incorrectCount.toString(),
-                              style: const TextStyle(fontSize: 18, color: Colors.redAccent),
+                              style: const TextStyle(
+                                fontSize: 18,
+                                color: Colors.redAccent,
+                              ),
                             ),
                           ],
                         ),
@@ -239,7 +252,9 @@ class QuizPage extends StatelessWidget {
                           userAnswer: userAnswer,
                           isCorrect: state.progress.correctness[index],
                           onAnswerSelected: (answer) {
-                            context.read<QuizPageBloc>().add(AnswerSubmitted(index, answer));
+                            context.read<QuizPageBloc>().add(
+                              AnswerSubmitted(index, answer),
+                            );
                           },
                         );
                       } else {
@@ -247,8 +262,9 @@ class QuizPage extends StatelessWidget {
                           quizQuestion: question,
                           questionNumber: index + 1,
                           userAnswer: userAnswer,
-                          onAnswered: (answer, isCorrect) =>
-                              context.read<QuizPageBloc>().add(AnswerSubmitted(index, answer)),
+                          onAnswered: (answer, isCorrect) => context
+                              .read<QuizPageBloc>()
+                              .add(AnswerSubmitted(index, answer)),
                         );
                       }
                       return Padding(
@@ -266,11 +282,16 @@ class QuizPage extends StatelessWidget {
                     bottom: 24,
                     right: 24,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 12,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.grey.shade900,
                         borderRadius: BorderRadius.circular(32),
-                        boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 8)],
+                        boxShadow: const [
+                          BoxShadow(color: Colors.black26, blurRadius: 8),
+                        ],
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -279,18 +300,25 @@ class QuizPage extends StatelessWidget {
                           const SizedBox(width: 4),
                           Text(
                             state.correctCount.toString(),
-                            style: const TextStyle(fontSize: 18, color: Colors.greenAccent),
+                            style: const TextStyle(
+                              fontSize: 18,
+                              color: Colors.greenAccent,
+                            ),
                           ),
                           const SizedBox(width: 16),
                           const Icon(Icons.close, color: Colors.redAccent),
                           const SizedBox(width: 4),
                           Text(
                             state.incorrectCount.toString(),
-                            style: const TextStyle(fontSize: 18, color: Colors.redAccent),
+                            style: const TextStyle(
+                              fontSize: 18,
+                              color: Colors.redAccent,
+                            ),
                           ),
                           const SizedBox(width: 16),
                           IconButton.filled(
-                            onPressed: () => _showGenerateDialog(context, state),
+                            onPressed: () =>
+                                _showGenerateDialog(context, state),
                             icon: const Icon(Icons.edit),
                           ),
                         ],
@@ -301,7 +329,9 @@ class QuizPage extends StatelessWidget {
             ),
           );
         }
-        return const Scaffold(body: Center(child: Text("Something went wrong.")));
+        return const Scaffold(
+          body: Center(child: Text("Something went wrong.")),
+        );
       },
     );
   }

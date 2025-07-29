@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:midnight_v1/blocs/quizzes_bloc/quizzes_bloc.dart';
 import 'package:midnight_v1/pages/settings_page/gemini_api_key_field.dart';
+import 'package:midnight_v1/classes/app_prefs.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
@@ -15,6 +16,21 @@ class SettingsPage extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.start,
           children: [
             const GeminiApiKeyField(),
+            StatefulBuilder(
+              builder: (context, setState) {
+                return SwitchListTile(
+                  title: const Text("Enable Embeddings (for quiz generation)"),
+                  value: AppPrefs.embeddingEnabled,
+                  onChanged: (val) async {
+                    AppPrefs.embeddingEnabled = val;
+                    setState(() {});
+                  },
+                  subtitle: const Text(
+                    "Default: Disabled. Embeddings improve semantic search but slow down quiz generation.",
+                  ),
+                );
+              },
+            ),
             ListTile(
               title: const Text("Clear quizzes"),
               leading: const Icon(Icons.delete),

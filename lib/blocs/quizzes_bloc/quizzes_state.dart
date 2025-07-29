@@ -21,12 +21,12 @@ class QuizzesLoadSuccess extends QuizzesState {
 
 class QuizGenerationInProgress extends QuizzesState {
   final List<Quiz> quizzes;
-  final Stream<String> progressStream;
+  final Stream<String> progressText;
 
-  const QuizGenerationInProgress(this.quizzes, this.progressStream);
+  const QuizGenerationInProgress(this.quizzes, this.progressText);
 
   @override
-  List<Object?> get props => [quizzes, progressStream];
+  List<Object?> get props => [quizzes, progressText];
 }
 
 class QuizzesLoadFailure extends QuizzesState {
@@ -36,4 +36,3 @@ class QuizzesLoadFailure extends QuizzesState {
   @override
   List<Object> get props => [error];
 }
-

@@ -11,10 +11,12 @@ class LoadQuizzes extends QuizzesEvent {}
 
 class GenerateQuiz extends QuizzesEvent {
   final Content userMessage;
-  const GenerateQuiz(this.userMessage);
+  final String? prompt;
+  final List<Source>? sources;
+  const GenerateQuiz(this.userMessage, {this.prompt, this.sources});
 
   @override
-  List<Object> get props => [userMessage];
+  List<Object> get props => [userMessage, prompt ?? "", sources ?? []];
 }
 
 class DeleteQuiz extends QuizzesEvent {

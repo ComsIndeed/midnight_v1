@@ -3,6 +3,14 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 abstract class Source {
+  static Source fromMap(Map<String, dynamic> map) {
+    // For now, only FileSource is supported
+    if (map.containsKey('path')) {
+      return FileSource.fromMap(map);
+    }
+    throw Exception('Unknown source type');
+  }
+
   Map<String, dynamic> toMap();
   String toJson();
   Uint8List toBytes();

@@ -132,52 +132,58 @@ Notes:
       userMessage,
     ]).asBroadcastStream();
 
-    // ON GENERATING
     int characters = 0;
     final progressStreamController = StreamController<String>.broadcast();
     responses.map((c) => c.text ?? "").listen((chunk) {
       characters += chunk.length;
       progressStreamController.add(
-        "(1/3) [Generating: $characters characters]",
+        "(1/2) [Generating: $characters characters]",
       );
     });
 
-    // ON DONE
     final quizCompleter = Completer<Quiz>();
     responses.map((c) => c.text ?? "").join().then((response) async {
-      final quizJson = trimCodeBlock(response);
-      final quiz = Quiz.fromJson(quizJson);
+      try {
+        final quizJson = trimCodeBlock(response);
+        if (quizJson.trim().isEmpty) throw Exception("No quiz generated");
+        final quiz = Quiz.fromJson(quizJson);
 
-      // Ensure all questions and choices have embeddings
-      progressStreamController.add("(2/3) [Embedding content]");
-      for (final question in quiz.questions) {
-        if (question is MultipleChoiceQuizQuestion) {
-          await question.populateEmbeddings();
-        } else {
-          // For non-multiple choice, embed question and answer
-          final contents = [
-            Content.text(question.question),
-            Content.text(question.answer),
-          ];
-          final response = await Embedding.model.batchEmbedContents(
-            contents
-                .map(
-                  (c) => EmbedContentRequest(
-                    c,
-                    taskType: TaskType.semanticSimilarity,
-                  ),
-                )
-                .toList(),
-          );
-          question.questionEmbedding = response.embeddings[0].values;
-          question.embeddings = response.embeddings[1].values;
+        // Only embed if enabled
+        if (AppPrefs.embeddingEnabled) {
+          progressStreamController.add("(2/2) [Embedding content]");
+          for (final question in quiz.questions) {
+            if (question is MultipleChoiceQuizQuestion) {
+              await question.populateEmbeddings();
+            } else {
+              final contents = [
+                Content.text(question.question),
+                Content.text(question.answer),
+              ];
+              final response = await Embedding.model.batchEmbedContents(
+                contents
+                    .map(
+                      (c) => EmbedContentRequest(
+                        c,
+                        taskType: TaskType.semanticSimilarity,
+                      ),
+                    )
+                    .toList(),
+              );
+              question.questionEmbedding = response.embeddings[0].values;
+              question.embeddings = response.embeddings[1].values;
+            }
+          }
         }
+        quizCompleter.complete(quiz);
+        progressStreamController.add("[Done]");
+      } catch (e) {
+        quizCompleter.completeError(e);
+        progressStreamController.add("[Error: ${e.toString()}]");
+      } finally {
+        await Future.delayed(Duration(seconds: 1));
+        progressStreamController.add("");
+        progressStreamController.close();
       }
-      quizCompleter.complete(quiz);
-      progressStreamController.add("(3/3) [Done]");
-      await Future.delayed(Duration(seconds: 1));
-      progressStreamController.add("");
-      progressStreamController.close();
     });
 
     return GenerateQuizResponse(

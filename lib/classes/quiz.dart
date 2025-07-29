@@ -10,14 +10,22 @@ class Quiz {
 
   final String title;
   final List<QuizQuestion> questions;
-  List<Source> sources = [];
+  String generationPrompt;
+  List<Source> sources;
 
-  Quiz({required this.title, required this.questions, this.sources = const []});
+  Quiz({
+    required this.title,
+    required this.questions,
+    this.generationPrompt = "",
+    this.sources = const [],
+  });
 
   Map<String, dynamic> toMap() {
     return {
       'title': title,
       'questions': questions.map((q) => q.toMap()).toList(),
+      'generationPrompt': generationPrompt,
+      'sources': sources.map((s) => s.toMap()).toList(),
     };
   }
 
@@ -25,14 +33,16 @@ class Quiz {
     return Quiz(
       title: map['title'],
       questions: (map['questions'] as List).map((q) {
-        // Determine if it's a MultipleChoiceQuizQuestion or QuizQuestion
         if (q is Map<String, dynamic> && q.containsKey('options')) {
           return MultipleChoiceQuizQuestion.fromMap(q);
         } else {
           return QuizQuestion.fromMap(q);
         }
       }).toList(),
-      sources: map['sources'] ?? [],
+      generationPrompt: map['generationPrompt'] ?? "",
+      sources:
+          (map['sources'] as List?)?.map((s) => Source.fromMap(s)).toList() ??
+          [],
     );
   }
 

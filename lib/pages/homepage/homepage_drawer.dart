@@ -1,3 +1,4 @@
+// import 'package:midnight_v1/classes/quiz.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:midnight_v1/blocs/quizzes_bloc/quizzes_bloc.dart';
@@ -35,7 +36,9 @@ class HomepageDrawer extends StatelessWidget {
                         quiz.title,
                       );
                       if (newTitle != null && newTitle.isNotEmpty) {
-                        context.read<QuizzesBloc>().add(RenameQuiz(quiz, newTitle));
+                        context.read<QuizzesBloc>().add(
+                          RenameQuiz(quiz, newTitle),
+                        );
                       }
                     },
                   ),
@@ -94,7 +97,41 @@ class HomepageDrawer extends StatelessWidget {
             child: SearchAnchor.bar(
               barHintText: "Search Quizzes",
               suggestionsBuilder: (context, controller) {
-                return [];
+                final quizzesState = context.read<QuizzesBloc>().state;
+                List<Quiz> allQuizzes = [];
+                if (quizzesState is QuizzesLoadSuccess) {
+                  allQuizzes.addAll(quizzesState.quizzes);
+                } else if (quizzesState is QuizGenerationInProgress) {
+                  allQuizzes.addAll(quizzesState.quizzes);
+                }
+
+                final filteredQuizzes = allQuizzes.where((quiz) {
+                  return quiz.title.toLowerCase().contains(
+                    controller.text.toLowerCase(),
+                  );
+                }).toList();
+
+                if (controller.text.isEmpty) {
+                  return [
+                    const Center(
+                      child: Text('Start typing to search for quizzes.'),
+                    ),
+                  ];
+                }
+
+                if (filteredQuizzes.isEmpty) {
+                  return [const Center(child: Text('No quizzes found.'))];
+                }
+
+                return filteredQuizzes.map((quiz) {
+                  return ListTile(
+                    title: Text(quiz.title),
+                    onTap: () {
+                      controller.closeView(quiz.title);
+                      Navigator.of(context).pushNamed("/quiz", arguments: quiz);
+                    },
+                  );
+                }).toList();
               },
             ),
           ),
@@ -112,54 +149,98 @@ class HomepageDrawer extends StatelessWidget {
           const Divider(),
           BlocBuilder<QuizzesBloc, QuizzesState>(
             builder: (context, state) {
+              final List<Quiz> quizzes = [];
+              Stream<String>? progressStream;
               if (state is QuizzesLoadSuccess) {
-                return SingleChildScrollView(
-                  child: Column(
-                    children: state.quizzes
-                        .map(
-                          (quiz) => Builder(
-                            builder: (itemContext) {
-                              return InkWell(
-                                onTap: () => Navigator.of(
-                                  context,
-                                ).pushNamed("/quiz", arguments: quiz),
-                                onSecondaryTap: () {
-                                  // Desktop right click
-                                  final box =
-                                      itemContext.findRenderObject() as RenderBox?;
-                                  final position =
-                                      box?.localToGlobal(Offset.zero) ?? Offset.zero;
-                                  HomepageDrawer.showQuizMenuOverlay(
-                                    context,
-                                    quiz,
-                                    position + Offset(box?.size.width ?? 0, 0),
-                                  );
-                                },
-                                onLongPress: () {
-                                  // Mobile long press
-                                  final box =
-                                      itemContext.findRenderObject() as RenderBox?;
-                                  final position =
-                                      box?.localToGlobal(Offset.zero) ?? Offset.zero;
-                                  HomepageDrawer.showQuizMenuOverlay(
-                                    context,
-                                    quiz,
-                                    position + Offset(box?.size.width ?? 0, 0),
-                                  );
-                                },
-                                child: ListTile(title: Text(quiz.title)),
-                              );
-                            },
-                          ),
-                        )
-                        .toList()
-                        .reversed
-                        .toList(),
-                  ),
-                );
-              } else {
-                return const SizedBox.shrink();
+                quizzes.addAll(state.quizzes);
+              } else if (state is QuizGenerationInProgress) {
+                quizzes.addAll(state.quizzes);
+                progressStream = state.progressText;
               }
+              if (quizzes.isEmpty) return const SizedBox.shrink();
+              return SingleChildScrollView(
+                child: Column(
+                  children: quizzes
+                      .map(
+                        (quiz) => Builder(
+                          builder: (itemContext) {
+                            final isGenerating = quiz.questions.isEmpty;
+                            return Column(
+                              children: [
+                                InkWell(
+                                  onTap: isGenerating
+                                      ? null
+                                      : () => Navigator.of(
+                                          context,
+                                        ).pushNamed("/quiz", arguments: quiz),
+                                  onSecondaryTap: isGenerating
+                                      ? null
+                                      : () {
+                                          final box =
+                                              itemContext.findRenderObject()
+                                                  as RenderBox?;
+                                          final position =
+                                              box?.localToGlobal(Offset.zero) ??
+                                              Offset.zero;
+                                          HomepageDrawer.showQuizMenuOverlay(
+                                            context,
+                                            quiz,
+                                            position +
+                                                Offset(box?.size.width ?? 0, 0),
+                                          );
+                                        },
+                                  onLongPress: isGenerating
+                                      ? null
+                                      : () {
+                                          final box =
+                                              itemContext.findRenderObject()
+                                                  as RenderBox?;
+                                          final position =
+                                              box?.localToGlobal(Offset.zero) ??
+                                              Offset.zero;
+                                          HomepageDrawer.showQuizMenuOverlay(
+                                            context,
+                                            quiz,
+                                            position +
+                                                Offset(box?.size.width ?? 0, 0),
+                                          );
+                                        },
+                                  child: ListTile(
+                                    title: Text(quiz.title),
+                                    enabled: !isGenerating,
+                                  ),
+                                ),
+                                if (isGenerating && progressStream != null)
+                                  StreamBuilder<String>(
+                                    stream: progressStream,
+                                    builder: (context, snapshot) {
+                                      if (snapshot.hasData &&
+                                          snapshot.data!.isNotEmpty) {
+                                        return Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 16.0,
+                                          ),
+                                          child: Text(
+                                            snapshot.data!,
+                                            style: const TextStyle(
+                                              color: Colors.grey,
+                                            ),
+                                          ),
+                                        );
+                                      }
+                                      return const SizedBox.shrink();
+                                    },
+                                  ),
+                              ],
+                            );
+                          },
+                        ),
+                      )
+                      .toList()
+                      .reversed
+                      .toList(),
+                ),
+              );
             },
           ),
         ],

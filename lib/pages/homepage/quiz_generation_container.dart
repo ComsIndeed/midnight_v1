@@ -304,7 +304,7 @@ class _QuizGenerationContainerState extends State<QuizGenerationContainer>
             });
           }
           _progressSubscription?.cancel();
-          _progressSubscription = state.progressStream.listen((text) {
+          _progressSubscription = state.progressText.listen((text) {
             setState(() {
               controllerTextSnapshot = text;
             });
@@ -319,7 +319,7 @@ class _QuizGenerationContainerState extends State<QuizGenerationContainer>
             width: isMobile ? sizes.width * 0.9 : sizes.width * 0.6,
             decoration: BoxDecoration(
               color: Colors.grey.shade900,
-              borderRadius: BorderRadius.circular(64),
+              borderRadius: BorderRadius.circular(24),
               boxShadow: [
                 if (isGenerating)
                   BoxShadow(
