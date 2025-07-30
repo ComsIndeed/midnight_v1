@@ -8,12 +8,14 @@ class Quiz {
     questions.addAll(newQuestions);
   }
 
+  final String id;
   final String title;
   final List<QuizQuestion> questions;
   String generationPrompt;
   List<Source> sources;
 
   Quiz({
+    required this.id,
     required this.title,
     required this.questions,
     this.generationPrompt = "",
@@ -22,6 +24,7 @@ class Quiz {
 
   Map<String, dynamic> toMap() {
     return {
+      'id': id,
       'title': title,
       'questions': questions.map((q) => q.toMap()).toList(),
       'generationPrompt': generationPrompt,
@@ -31,6 +34,7 @@ class Quiz {
 
   factory Quiz.fromMap(Map<String, dynamic> map) {
     return Quiz(
+      id: map['id'] ?? Quiz.generateUuid(),
       title: map['title'],
       questions: (map['questions'] as List).map((q) {
         if (q is Map<String, dynamic> && q.containsKey('options')) {
@@ -44,6 +48,13 @@ class Quiz {
           (map['sources'] as List?)?.map((s) => Source.fromMap(s)).toList() ??
           [],
     );
+  }
+  static String generateUuid() {
+    // Simple UUID v4 generator
+    return List.generate(32, (i) {
+      final r = (DateTime.now().microsecondsSinceEpoch + i * 9973) % 16;
+      return r.toRadixString(16);
+    }).join();
   }
 
   String toJson() => jsonEncode(toMap());

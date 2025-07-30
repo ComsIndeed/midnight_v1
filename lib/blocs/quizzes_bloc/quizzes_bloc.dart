@@ -44,6 +44,7 @@ class QuizzesBloc extends Bloc<QuizzesEvent, QuizzesState> {
 
       // Add a placeholder quiz (disabled, with progress)
       final placeholderQuiz = Quiz(
+        id: Quiz.generateUuid(),
         title: "Generating...",
         questions: [],
         generationPrompt: event.prompt ?? "",
@@ -71,6 +72,7 @@ class QuizzesBloc extends Bloc<QuizzesEvent, QuizzesState> {
         newQuiz = await generateQuizResponse.quiz;
         // Save prompt and sources in quiz
         newQuiz = Quiz(
+          id: newQuiz.id,
           title: newQuiz.title,
           questions: newQuiz.questions,
           generationPrompt: event.prompt ?? "",
@@ -101,7 +103,7 @@ class QuizzesBloc extends Bloc<QuizzesEvent, QuizzesState> {
     Emitter<QuizzesState> emit,
   ) async {
     final quizzes = await _quizRepository.loadQuizzes();
-    quizzes.removeWhere((q) => q.title == event.quiz.title);
+    quizzes.removeWhere((q) => q.id == event.quiz.id);
     await _quizRepository.saveQuizzes(quizzes);
     add(LoadQuizzes());
   }
@@ -111,9 +113,10 @@ class QuizzesBloc extends Bloc<QuizzesEvent, QuizzesState> {
     Emitter<QuizzesState> emit,
   ) async {
     final quizzes = await _quizRepository.loadQuizzes();
-    final index = quizzes.indexWhere((q) => q.title == event.quiz.title);
+    final index = quizzes.indexWhere((q) => q.id == event.quiz.id);
     if (index != -1) {
       quizzes[index] = Quiz(
+        id: event.quiz.id,
         title: event.newTitle,
         questions: event.quiz.questions,
       );

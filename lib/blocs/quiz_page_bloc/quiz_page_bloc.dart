@@ -34,7 +34,7 @@ class QuizPageBloc extends Bloc<QuizPageEvent, QuizPageState> {
   ) async {
     emit(QuizPageLoadInProgress());
     try {
-      final progress = await _loadProgress(event.quiz.title);
+      final progress = await _loadProgress(event.quiz.id);
       final counters = _updateCounters(event.quiz, progress);
       emit(
         QuizPageLoadSuccess(
@@ -66,7 +66,7 @@ class QuizPageBloc extends Bloc<QuizPageEvent, QuizPageState> {
           ..[event.questionIndex] = isCorrect,
       );
 
-      await _persistProgress(currentState.quiz.title, newProgress);
+      await _persistProgress(currentState.quiz.id, newProgress);
       final counters = _updateCounters(currentState.quiz, newProgress);
 
       emit(
@@ -81,8 +81,8 @@ class QuizPageBloc extends Bloc<QuizPageEvent, QuizPageState> {
     }
   }
 
-  Future<QuizProgress> _loadProgress(String quizTitle) async {
-    final key = 'quiz_progress_$quizTitle';
+  Future<QuizProgress> _loadProgress(String quizId) async {
+    final key = 'quiz_progress_$quizId';
     final saved = prefs.getString(key);
     if (saved != null && saved.isNotEmpty) {
       // Use compute to run decoding in the background
@@ -91,8 +91,8 @@ class QuizPageBloc extends Bloc<QuizPageEvent, QuizPageState> {
     return QuizProgress(userAnswers: {}, correctness: {});
   }
 
-  Future<void> _persistProgress(String quizTitle, QuizProgress progress) async {
-    final key = 'quiz_progress_$quizTitle';
+  Future<void> _persistProgress(String quizId, QuizProgress progress) async {
+    final key = 'quiz_progress_$quizId';
     // Use compute to run encoding in the background
     final jsonString = await compute(_encodeQuizProgress, progress);
     await prefs.setString(key, jsonString);
