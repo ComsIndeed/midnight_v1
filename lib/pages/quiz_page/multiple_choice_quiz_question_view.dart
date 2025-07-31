@@ -68,7 +68,7 @@ class _MultipleChoiceQuizQuestionViewState
           final isCorrectAnswer = choice.text == widget.quizQuestion.answer;
           final shouldHighlightCorrect = isCorrect == false && isCorrectAnswer;
           return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 2.0, horizontal: 12),
+            padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 12),
             child: Container(
               decoration: shouldHighlightCorrect
                   ? BoxDecoration(
@@ -93,28 +93,29 @@ class _MultipleChoiceQuizQuestionViewState
                                   : Colors.red.shade900.withAlpha(100)))
                       : null,
                 ),
-                child: Wrap(
-                  alignment: WrapAlignment.start,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  children: [
-                    Text(
-                      '$letter.',
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w300,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Text(choice.text),
-                    if (isSelected && isCorrect != null)
-                      Padding(
-                        padding: const EdgeInsets.only(left: 8.0),
-                        child: Icon(
-                          isCorrect ? Icons.check : Icons.close,
-                          color: isCorrect ? Colors.green : Colors.red,
+                child: Padding(
+                  padding: EdgeInsets.symmetric(vertical: 16),
+                  child: Row(
+                    children: [
+                      Text(
+                        '$letter.',
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w300,
                         ),
                       ),
-                  ],
+                      const SizedBox(width: 16),
+                      Expanded(child: Wrap(children: [Text(choice.text)])),
+                      if (isSelected && isCorrect != null)
+                        Padding(
+                          padding: const EdgeInsets.only(left: 8.0),
+                          child: Icon(
+                            isCorrect ? Icons.check : Icons.close,
+                            color: isCorrect ? Colors.green : Colors.red,
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
               ),
             ),
