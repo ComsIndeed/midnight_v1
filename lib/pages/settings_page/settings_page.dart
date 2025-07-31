@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:midnight_v1/blocs/quizzes_bloc/quizzes_bloc.dart';
+import 'package:midnight_v1/pages/settings_page/enable_identification_quiz_preview.dart';
 import 'package:midnight_v1/pages/settings_page/gemini_api_key_field.dart';
 import 'package:midnight_v1/classes/app_prefs.dart';
 
@@ -62,6 +63,7 @@ class SettingsPage extends StatelessWidget {
                 }
               },
             ),
+            EnableIdentificationQuizPreview(),
           ],
         ),
       ),

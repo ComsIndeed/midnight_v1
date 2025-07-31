@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:midnight_v1/blocs/quiz_page_bloc/quiz_page_bloc.dart';
+import 'package:midnight_v1/classes/app_prefs.dart';
 import 'package:midnight_v1/classes/inference.dart';
 import 'package:midnight_v1/classes/quiz.dart';
 import 'package:midnight_v1/pages/quiz_page/appbar_title.dart';
@@ -245,7 +246,8 @@ class QuizPage extends StatelessWidget {
                       final question = state.quiz.questions[index];
                       final userAnswer = state.progress.userAnswers[index];
                       Widget widgetView;
-                      if (question is MultipleChoiceQuizQuestion) {
+                      if (question is MultipleChoiceQuizQuestion &&
+                          !AppPrefs.useIdentificationQuestions) {
                         widgetView = MultipleChoiceQuizQuestionView(
                           quizQuestion: question,
                           questionNumber: index,
@@ -260,11 +262,14 @@ class QuizPage extends StatelessWidget {
                       } else {
                         widgetView = IdentificationQuizQuestionView(
                           quizQuestion: question,
-                          questionNumber: index + 1,
+                          questionNumber: index,
                           userAnswer: userAnswer,
-                          onAnswered: (answer, isCorrect) => context
-                              .read<QuizPageBloc>()
-                              .add(AnswerSubmitted(index, answer)),
+                          isCorrect: state.progress.correctness[index],
+                          onAnswerSubmitted: (answer) {
+                            context.read<QuizPageBloc>().add(
+                              AnswerSubmitted(index, answer),
+                            );
+                          },
                         );
                       }
                       return Padding(

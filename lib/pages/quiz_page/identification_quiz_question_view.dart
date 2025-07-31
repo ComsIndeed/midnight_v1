@@ -6,14 +6,16 @@ class IdentificationQuizQuestionView extends StatefulWidget {
     super.key,
     required this.quizQuestion,
     required this.questionNumber,
-    this.userAnswer,
-    required this.onAnswered,
+    required this.userAnswer,
+    required this.isCorrect,
+    required this.onAnswerSubmitted,
   });
 
   final QuizQuestion quizQuestion;
   final int questionNumber;
   final String? userAnswer;
-  final void Function(String answer, bool isCorrect) onAnswered;
+  final bool? isCorrect;
+  final ValueChanged<String> onAnswerSubmitted;
 
   @override
   State<IdentificationQuizQuestionView> createState() =>
@@ -23,17 +25,11 @@ class IdentificationQuizQuestionView extends StatefulWidget {
 class _IdentificationQuizQuestionViewState
     extends State<IdentificationQuizQuestionView> {
   late TextEditingController controller;
-  bool? isCorrect;
 
   @override
   void initState() {
     super.initState();
     controller = TextEditingController(text: widget.userAnswer ?? "");
-    if (widget.userAnswer != null) {
-      isCorrect =
-          widget.userAnswer!.trim().toLowerCase() ==
-          widget.quizQuestion.answer.trim().toLowerCase();
-    }
   }
 
   @override
@@ -41,49 +37,53 @@ class _IdentificationQuizQuestionViewState
     super.didUpdateWidget(oldWidget);
     if (widget.userAnswer != oldWidget.userAnswer) {
       controller.text = widget.userAnswer ?? "";
-      if (widget.userAnswer != null) {
-        isCorrect =
-            widget.userAnswer!.trim().toLowerCase() ==
-            widget.quizQuestion.answer.trim().toLowerCase();
-      }
     }
   }
 
   void _submit(String value) {
-    final correct =
-        value.trim().toLowerCase() ==
-        widget.quizQuestion.answer.trim().toLowerCase();
-    setState(() {
-      isCorrect = correct;
-    });
-    widget.onAnswered(value, correct);
+    widget.onAnswerSubmitted(value);
   }
 
   @override
   Widget build(BuildContext context) {
-    final sizes = MediaQuery.sizeOf(context);
+    final isCorrect = widget.isCorrect;
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('${widget.questionNumber}. ${widget.quizQuestion.question}'),
-        SizedBox(
-          height: 64,
-          width: sizes.width * 0.8,
+        Text(
+          'Question ${widget.questionNumber + 1}',
+          style: TextStyle(
+            fontSize: 32,
+            fontWeight: FontWeight.w100,
+            color: Colors.grey.shade800,
+          ),
+        ),
+        Text(
+          widget.quizQuestion.question,
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 12),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 12),
           child: TextField(
             controller: controller,
             decoration: InputDecoration(
-              border: OutlineInputBorder(),
-              hintText: "Answer",
+              border: const OutlineInputBorder(),
+              hintText: "Type your answer here...",
               suffixIcon: isCorrect == null
                   ? null
                   : Icon(
-                      isCorrect! ? Icons.check : Icons.close,
-                      color: isCorrect! ? Colors.green : Colors.red,
+                      isCorrect ? Icons.check : Icons.close,
+                      color: isCorrect ? Colors.green : Colors.red,
                     ),
             ),
-            onSubmitted: _submit,
+            onSubmitted: widget.userAnswer == null ? _submit : null,
             enabled: widget.userAnswer == null,
           ),
         ),
+        if (isCorrect != null)
+          Text("Correct answer: ${widget.quizQuestion.answer}"),
+        const SizedBox(height: 64),
       ],
     );
   }
