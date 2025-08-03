@@ -5,9 +5,11 @@ import 'package:midnight_v1/blocs/quiz_page_bloc/quiz_page_bloc.dart';
 import 'package:midnight_v1/blocs/quizzes_bloc/quizzes_bloc.dart';
 import 'package:midnight_v1/classes/app_prefs.dart';
 import 'package:midnight_v1/classes/quiz.dart';
+import 'package:midnight_v1/pages/chats_page/chats_page.dart';
 import 'package:midnight_v1/pages/homepage/homepage.dart';
 import 'package:midnight_v1/pages/quiz_page/quiz_page.dart';
 import 'package:midnight_v1/pages/settings_page/settings_page.dart';
+import 'package:midnight_v1/pages/study_page/study_page.dart';
 import 'package:midnight_v1/repositories/quiz_repository.dart';
 import 'package:responsive_framework/responsive_framework.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -49,6 +51,8 @@ class MainApp extends StatelessWidget {
     return MaterialApp(
       routes: {
         "/": (context) => const Homepage(),
+        "/study": (context) => const StudyPage(),
+        "/chats": (context) => const ChatsPage(),
         "/settings": (context) => const SettingsPage(),
         "/quiz": (context) {
           final quiz = ModalRoute.of(context)?.settings.arguments as Quiz;

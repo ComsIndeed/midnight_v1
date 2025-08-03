@@ -90,160 +90,179 @@ class HomepageDrawer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Drawer(
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: SearchAnchor.bar(
-              barHintText: "Search Quizzes",
-              suggestionsBuilder: (context, controller) {
-                final quizzesState = context.read<QuizzesBloc>().state;
-                List<Quiz> allQuizzes = [];
-                if (quizzesState is QuizzesLoadSuccess) {
-                  allQuizzes.addAll(quizzesState.quizzes);
-                } else if (quizzesState is QuizGenerationInProgress) {
-                  allQuizzes.addAll(quizzesState.quizzes);
+      child: SafeArea(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: SearchAnchor.bar(
+                barHintText: "Search Quizzes",
+                suggestionsBuilder: (context, controller) {
+                  final quizzesState = context.read<QuizzesBloc>().state;
+                  List<Quiz> allQuizzes = [];
+                  if (quizzesState is QuizzesLoadSuccess) {
+                    allQuizzes.addAll(quizzesState.quizzes);
+                  } else if (quizzesState is QuizGenerationInProgress) {
+                    allQuizzes.addAll(quizzesState.quizzes);
+                  }
+
+                  final filteredQuizzes = allQuizzes.where((quiz) {
+                    return quiz.title.toLowerCase().contains(
+                      controller.text.toLowerCase(),
+                    );
+                  }).toList();
+
+                  if (controller.text.isEmpty) {
+                    return [
+                      const Center(
+                        child: Text('Start typing to search for quizzes.'),
+                      ),
+                    ];
+                  }
+
+                  if (filteredQuizzes.isEmpty) {
+                    return [const Center(child: Text('No quizzes found.'))];
+                  }
+
+                  return filteredQuizzes.map((quiz) {
+                    return ListTile(
+                      title: Text(quiz.title),
+                      onTap: () {
+                        controller.closeView(quiz.title);
+                        Navigator.of(
+                          context,
+                        ).pushNamed("/quiz", arguments: quiz);
+                      },
+                    );
+                  }).toList();
+                },
+              ),
+            ),
+            const SizedBox(height: 16),
+            ListTile(
+              title: const Text("Account & Settings"),
+              leading: const Icon(Icons.account_circle),
+              onTap: () => Navigator.of(context).pushNamed("/settings"),
+            ),
+            ListTile(
+              title: Text("Study"),
+              leading: const Icon(Icons.lightbulb),
+              onTap: () => Navigator.of(context).pushNamed("/study"),
+            ),
+            ExpansionTile(
+              title: const Text("Chats"),
+              leading: const Icon(Icons.chat),
+              children: [Expanded(child: Text("data"))],
+            ),
+            const Divider(),
+            BlocBuilder<QuizzesBloc, QuizzesState>(
+              builder: (context, state) {
+                final List<Quiz> quizzes = [];
+                Stream<String>? progressStream;
+                if (state is QuizzesLoadSuccess) {
+                  quizzes.addAll(state.quizzes);
+                } else if (state is QuizGenerationInProgress) {
+                  quizzes.addAll(state.quizzes);
+                  progressStream = state.progressText;
                 }
-
-                final filteredQuizzes = allQuizzes.where((quiz) {
-                  return quiz.title.toLowerCase().contains(
-                    controller.text.toLowerCase(),
-                  );
-                }).toList();
-
-                if (controller.text.isEmpty) {
-                  return [
-                    const Center(
-                      child: Text('Start typing to search for quizzes.'),
-                    ),
-                  ];
-                }
-
-                if (filteredQuizzes.isEmpty) {
-                  return [const Center(child: Text('No quizzes found.'))];
-                }
-
-                return filteredQuizzes.map((quiz) {
-                  return ListTile(
-                    title: Text(quiz.title),
-                    onTap: () {
-                      controller.closeView(quiz.title);
-                      Navigator.of(context).pushNamed("/quiz", arguments: quiz);
-                    },
-                  );
-                }).toList();
+                if (quizzes.isEmpty) return const SizedBox.shrink();
+                return SingleChildScrollView(
+                  child: Column(
+                    children: quizzes
+                        .map(
+                          (quiz) => Builder(
+                            builder: (itemContext) {
+                              final isGenerating = quiz.questions.isEmpty;
+                              return Column(
+                                children: [
+                                  InkWell(
+                                    onTap: isGenerating
+                                        ? null
+                                        : () => Navigator.of(
+                                            context,
+                                          ).pushNamed("/quiz", arguments: quiz),
+                                    onSecondaryTap: isGenerating
+                                        ? null
+                                        : () {
+                                            final box =
+                                                itemContext.findRenderObject()
+                                                    as RenderBox?;
+                                            final position =
+                                                box?.localToGlobal(
+                                                  Offset.zero,
+                                                ) ??
+                                                Offset.zero;
+                                            HomepageDrawer.showQuizMenuOverlay(
+                                              context,
+                                              quiz,
+                                              position +
+                                                  Offset(
+                                                    box?.size.width ?? 0,
+                                                    0,
+                                                  ),
+                                            );
+                                          },
+                                    onLongPress: isGenerating
+                                        ? null
+                                        : () {
+                                            final box =
+                                                itemContext.findRenderObject()
+                                                    as RenderBox?;
+                                            final position =
+                                                box?.localToGlobal(
+                                                  Offset.zero,
+                                                ) ??
+                                                Offset.zero;
+                                            HomepageDrawer.showQuizMenuOverlay(
+                                              context,
+                                              quiz,
+                                              position +
+                                                  Offset(
+                                                    box?.size.width ?? 0,
+                                                    0,
+                                                  ),
+                                            );
+                                          },
+                                    child: ListTile(
+                                      title: Text(quiz.title),
+                                      enabled: !isGenerating,
+                                    ),
+                                  ),
+                                  if (isGenerating && progressStream != null)
+                                    StreamBuilder<String>(
+                                      stream: progressStream,
+                                      builder: (context, snapshot) {
+                                        if (snapshot.hasData &&
+                                            snapshot.data!.isNotEmpty) {
+                                          return Padding(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 16.0,
+                                            ),
+                                            child: Text(
+                                              snapshot.data!,
+                                              style: const TextStyle(
+                                                color: Colors.grey,
+                                              ),
+                                            ),
+                                          );
+                                        }
+                                        return const SizedBox.shrink();
+                                      },
+                                    ),
+                                ],
+                              );
+                            },
+                          ),
+                        )
+                        .toList()
+                        .reversed
+                        .toList(),
+                  ),
+                );
               },
             ),
-          ),
-          const SizedBox(height: 16),
-          ListTile(
-            title: const Text("Account"),
-            leading: const Icon(Icons.person),
-            onTap: () {},
-          ),
-          ListTile(
-            title: const Text("Settings"),
-            leading: const Icon(Icons.settings),
-            onTap: () => Navigator.of(context).pushNamed("/settings"),
-          ),
-          const Divider(),
-          BlocBuilder<QuizzesBloc, QuizzesState>(
-            builder: (context, state) {
-              final List<Quiz> quizzes = [];
-              Stream<String>? progressStream;
-              if (state is QuizzesLoadSuccess) {
-                quizzes.addAll(state.quizzes);
-              } else if (state is QuizGenerationInProgress) {
-                quizzes.addAll(state.quizzes);
-                progressStream = state.progressText;
-              }
-              if (quizzes.isEmpty) return const SizedBox.shrink();
-              return SingleChildScrollView(
-                child: Column(
-                  children: quizzes
-                      .map(
-                        (quiz) => Builder(
-                          builder: (itemContext) {
-                            final isGenerating = quiz.questions.isEmpty;
-                            return Column(
-                              children: [
-                                InkWell(
-                                  onTap: isGenerating
-                                      ? null
-                                      : () => Navigator.of(
-                                          context,
-                                        ).pushNamed("/quiz", arguments: quiz),
-                                  onSecondaryTap: isGenerating
-                                      ? null
-                                      : () {
-                                          final box =
-                                              itemContext.findRenderObject()
-                                                  as RenderBox?;
-                                          final position =
-                                              box?.localToGlobal(Offset.zero) ??
-                                              Offset.zero;
-                                          HomepageDrawer.showQuizMenuOverlay(
-                                            context,
-                                            quiz,
-                                            position +
-                                                Offset(box?.size.width ?? 0, 0),
-                                          );
-                                        },
-                                  onLongPress: isGenerating
-                                      ? null
-                                      : () {
-                                          final box =
-                                              itemContext.findRenderObject()
-                                                  as RenderBox?;
-                                          final position =
-                                              box?.localToGlobal(Offset.zero) ??
-                                              Offset.zero;
-                                          HomepageDrawer.showQuizMenuOverlay(
-                                            context,
-                                            quiz,
-                                            position +
-                                                Offset(box?.size.width ?? 0, 0),
-                                          );
-                                        },
-                                  child: ListTile(
-                                    title: Text(quiz.title),
-                                    enabled: !isGenerating,
-                                  ),
-                                ),
-                                if (isGenerating && progressStream != null)
-                                  StreamBuilder<String>(
-                                    stream: progressStream,
-                                    builder: (context, snapshot) {
-                                      if (snapshot.hasData &&
-                                          snapshot.data!.isNotEmpty) {
-                                        return Padding(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 16.0,
-                                          ),
-                                          child: Text(
-                                            snapshot.data!,
-                                            style: const TextStyle(
-                                              color: Colors.grey,
-                                            ),
-                                          ),
-                                        );
-                                      }
-                                      return const SizedBox.shrink();
-                                    },
-                                  ),
-                              ],
-                            );
-                          },
-                        ),
-                      )
-                      .toList()
-                      .reversed
-                      .toList(),
-                ),
-              );
-            },
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
