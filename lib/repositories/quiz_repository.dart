@@ -1,6 +1,4 @@
-import 'package:google_generative_ai/google_generative_ai.dart';
-import 'package:midnight_v1/classes/inference.dart';
-import 'package:midnight_v1/classes/quiz.dart';
+import 'package:midnight_v1/models/quiz.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class QuizRepository {
@@ -20,8 +18,5 @@ class QuizRepository {
     await prefs.setStringList(quizzesKey, quizJsons);
   }
 
-  Future<Quiz> generateQuiz(Content userMessage) async {
-    final generateQuizResponse = Inference.generateQuiz(userMessage, []);
-    return await generateQuizResponse.quiz;
-  }
+  
 }

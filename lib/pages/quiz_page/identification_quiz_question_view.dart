@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:midnight_v1/classes/quiz.dart';
+import 'package:midnight_v1/models/quiz.dart';
 
 class IdentificationQuizQuestionView extends StatefulWidget {
   const IdentificationQuizQuestionView({

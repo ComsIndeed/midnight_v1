@@ -1,7 +1,8 @@
 import 'dart:convert';
 import 'package:google_generative_ai/google_generative_ai.dart';
-import 'package:midnight_v1/classes/embedding.dart';
-import 'package:midnight_v1/classes/source.dart';
+import 'package:midnight_v1/services/embedding.dart';
+import 'package:midnight_v1/models/source.dart';
+import 'package:uuid/uuid.dart';
 
 class Quiz {
   void addQuestions(List<QuizQuestion> newQuestions) {
@@ -11,8 +12,8 @@ class Quiz {
   final String id;
   final String title;
   final List<QuizQuestion> questions;
-  String generationPrompt;
-  List<Source> sources;
+  final String generationPrompt;
+  final List<Source> sources;
 
   Quiz({
     required this.id,
@@ -49,13 +50,7 @@ class Quiz {
           [],
     );
   }
-  static String generateUuid() {
-    // Simple UUID v4 generator
-    return List.generate(32, (i) {
-      final r = (DateTime.now().microsecondsSinceEpoch + i * 9973) % 16;
-      return r.toRadixString(16);
-    }).join();
-  }
+  static String generateUuid() => const Uuid().v4();
 
   String toJson() => jsonEncode(toMap());
 

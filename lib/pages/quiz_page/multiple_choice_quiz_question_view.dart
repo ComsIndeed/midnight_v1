@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_generative_ai/google_generative_ai.dart';
-import 'package:midnight_v1/classes/embedding.dart';
-import 'package:midnight_v1/classes/quiz.dart';
+import 'package:midnight_v1/models/quiz.dart';
 
 class MultipleChoiceQuizQuestionView extends StatefulWidget {
   const MultipleChoiceQuizQuestionView({

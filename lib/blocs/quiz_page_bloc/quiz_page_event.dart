@@ -23,3 +23,12 @@ class AnswerSubmitted extends QuizPageEvent {
   @override
   List<Object> get props => [questionIndex, answer];
 }
+
+class GenerateNewQuestions extends QuizPageEvent {
+  final String? description;
+  const GenerateNewQuestions({this.description});
+
+  @override
+  List<Object> get props => [description ?? ''];
+}
+

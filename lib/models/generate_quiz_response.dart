@@ -1,4 +1,4 @@
-import 'package:midnight_v1/classes/quiz.dart';
+import 'package:midnight_v1/models/quiz.dart';
 
 class GenerateQuizResponse {
   Future<Quiz> quiz;

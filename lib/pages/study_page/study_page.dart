@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:midnight_v1/blocs/quizzes_bloc/quizzes_bloc.dart';
-import 'package:midnight_v1/classes/quiz.dart';
+import 'package:midnight_v1/models/quiz.dart';
 import 'package:midnight_v1/pages/homepage/homepage_drawer.dart';
 import 'package:midnight_v1/pages/homepage/main_title.dart';
 import 'package:midnight_v1/pages/homepage/quiz_generation_container.dart';

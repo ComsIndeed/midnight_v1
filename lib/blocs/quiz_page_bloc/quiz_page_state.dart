@@ -36,6 +36,31 @@ class QuizPageLoadSuccess extends QuizPageState {
   ];
 }
 
+class QuizPageGeneratingQuestions extends QuizPageState {
+  final Quiz quiz;
+  final QuizProgress progress;
+  final int correctCount;
+  final int incorrectCount;
+  final int unansweredCount;
+
+  const QuizPageGeneratingQuestions({
+    required this.quiz,
+    required this.progress,
+    required this.correctCount,
+    required this.incorrectCount,
+    required this.unansweredCount,
+  });
+
+  @override
+  List<Object> get props => [
+        quiz,
+        progress,
+        correctCount,
+        incorrectCount,
+        unansweredCount,
+      ];
+}
+
 class QuizPageLoadFailure extends QuizPageState {
   final String error;
 
@@ -44,3 +69,4 @@ class QuizPageLoadFailure extends QuizPageState {
   @override
   List<Object> get props => [error];
 }
+

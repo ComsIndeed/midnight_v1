@@ -6,7 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:midnight_v1/blocs/quizzes_bloc/quizzes_bloc.dart';
-import 'package:path/path.dart' as p;
+import 'package:midnight_v1/utils/file_helpers.dart';
 import 'package:file_picker/file_picker.dart';
 
 class QuizGenerationContainer extends StatefulWidget {
@@ -22,12 +22,10 @@ class _QuizGenerationContainerState extends State<QuizGenerationContainer>
   final controller = TextEditingController();
   List<File> files = [];
   String controllerTextSnapshot = "";
-  bool isGenerating = false;
 
   late AnimationController _shadowController;
   late Animation<Color?> _colorAnimation;
   late Animation<double> _blurAnimation;
-  StreamSubscription<String>? _progressSubscription;
 
   final List<Color> _shadowColors = [
     Colors.pinkAccent,
@@ -65,58 +63,7 @@ class _QuizGenerationContainerState extends State<QuizGenerationContainer>
   void dispose() {
     _shadowController.dispose();
     controller.dispose();
-    _progressSubscription?.cancel();
     super.dispose();
-  }
-
-  Future<List<Map<String, dynamic>>> getFileBytesAndMimeTypes() async {
-    List<Map<String, dynamic>> result = [];
-    for (final file in files) {
-      final ext = p.extension(file.path).toLowerCase();
-      String? mimetype;
-      if (['.jpg', '.jpeg', '.jpe', '.jfif', '.pjpeg', '.pjp'].contains(ext)) {
-        mimetype = 'image/jpeg';
-      } else if (ext == '.png') {
-        mimetype = 'image/png';
-      } else if (ext == '.gif') {
-        mimetype = 'image/gif';
-      } else if (ext == '.bmp') {
-        mimetype = 'image/bmp';
-      } else if (ext == '.webp') {
-        mimetype = 'image/webp';
-      } else if (ext == '.pdf') {
-        mimetype = 'application/pdf';
-      } else if (ext == '.mp3') {
-        mimetype = 'audio/mpeg';
-      } else if (ext == '.wav') {
-        mimetype = 'audio/wav';
-      } else if (ext == '.ogg') {
-        mimetype = 'audio/ogg';
-      } else if (ext == '.aac') {
-        mimetype = 'audio/aac';
-      } else if (ext == '.m4a') {
-        mimetype = 'audio/mp4';
-      } else if (ext == '.mp4') {
-        mimetype = 'video/mp4';
-      } else if (ext == '.mov') {
-        mimetype = 'video/quicktime';
-      } else if (ext == '.avi') {
-        mimetype = 'video/x-msvideo';
-      } else if (ext == '.wmv') {
-        mimetype = 'video/x-ms-wmv';
-      } else if (ext == '.flv') {
-        mimetype = 'video/x-flv';
-      } else if (ext == '.mkv') {
-        mimetype = 'video/x-matroska';
-      } else if (ext == '.webm') {
-        mimetype = 'video/webm';
-      } else {
-        mimetype = 'application/octet-stream';
-      }
-      final bytes = await file.readAsBytes();
-      result.add({'mimetype': mimetype, 'bytes': bytes});
-    }
-    return result;
   }
 
   Future<void> addFiles() async {
@@ -148,121 +95,10 @@ class _QuizGenerationContainerState extends State<QuizGenerationContainer>
     });
   }
 
-  Widget buildFileBox(File file) {
-    final ext = p.extension(file.path).toLowerCase();
-    final isImage = [
-      '.jpg',
-      '.jpeg',
-      '.png',
-      '.gif',
-      '.bmp',
-      '.webp',
-    ].contains(ext);
-    final isVideo = [
-      '.mp4',
-      '.mov',
-      '.avi',
-      '.wmv',
-      '.flv',
-      '.mkv',
-      '.webm',
-    ].contains(ext);
-    final isAudio = ['.mp3', '.wav', '.ogg', '.aac', '.m4a'].contains(ext);
-    final isPdf = ext == '.pdf';
-
-    Widget content;
-    if (isImage) {
-      content = ClipRRect(
-        borderRadius: BorderRadius.circular(8),
-        child: Image.file(
-          file,
-          fit: BoxFit.cover,
-          width: double.infinity,
-          height: double.infinity,
-          errorBuilder: (c, e, s) =>
-              const Icon(Icons.broken_image, color: Colors.white54, size: 32),
-        ),
-      );
-    } else if (isVideo) {
-      content = const Stack(
-        alignment: Alignment.center,
-        children: [
-          SizedBox(
-            child: Icon(Icons.videocam, color: Colors.white54, size: 40),
-          ),
-          Icon(Icons.play_circle_fill, color: Colors.white, size: 48),
-        ],
-      );
-    } else if (isPdf) {
-      content = const Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.picture_as_pdf, color: Colors.red, size: 32),
-          Text(
-            'PDF',
-            style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
-          ),
-        ],
-      );
-    } else if (isAudio) {
-      content = Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.audiotrack, color: Colors.blue.shade900, size: 32),
-          Text(
-            ext.replaceFirst('.', '').toUpperCase(),
-            style: TextStyle(
-              color: Colors.blue.shade900,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
-      );
-    } else {
-      content = Center(
-        child: Text(
-          ext.toUpperCase(),
-          style: const TextStyle(color: Colors.white70),
-        ),
-      );
-    }
-
-    return Stack(
-      children: [
-        Container(
-          width: 120,
-          height: 72,
-          margin: const EdgeInsets.all(4),
-          decoration: BoxDecoration(
-            color: Colors.grey.shade800,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: content,
-          ),
-        ),
-        Positioned(
-          top: 0,
-          right: 0,
-          child: IconButton(
-            icon: const Icon(Icons.close, color: Colors.white, size: 18),
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
-            splashRadius: 16,
-            onPressed: () => removeFile(file),
-            tooltip: 'Remove',
-          ),
-        ),
-      ],
-    );
-  }
-
-  Future<void> generateQuiz() async {
+  Future<void> generateQuiz(bool isGenerating) async {
     if (isGenerating) return;
-    setState(() => isGenerating = true);
     try {
-      final fileData = await getFileBytesAndMimeTypes();
+      final fileData = await getFileBytesAndMimeTypes(files);
       final content = Content("user", [
         if (controller.text.isNotEmpty) TextPart(controller.text),
         ...fileData.map(
@@ -275,12 +111,14 @@ class _QuizGenerationContainerState extends State<QuizGenerationContainer>
       context.read<QuizzesBloc>().add(GenerateQuiz(content));
       controllerTextSnapshot = controller.text;
       controller.clear();
+      setState(() {
+        files.clear();
+      });
     } catch (e, st) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
       print("$e\n$st");
-      setState(() => isGenerating = false);
     }
   }
 
@@ -288,101 +126,88 @@ class _QuizGenerationContainerState extends State<QuizGenerationContainer>
   Widget build(BuildContext context) {
     final sizes = MediaQuery.sizeOf(context);
     final isMobile = sizes.width < 600;
-    return BlocListener<QuizzesBloc, QuizzesState>(
-      listener: (context, state) {
-        if (state is QuizzesLoadSuccess || state is QuizzesLoadFailure) {
-          if (isGenerating) {
-            setState(() {
-              isGenerating = false;
-              files.clear();
-            });
-          }
-        } else if (state is QuizGenerationInProgress) {
-          if (!isGenerating) {
-            setState(() {
-              isGenerating = true;
-            });
-          }
-          _progressSubscription?.cancel();
-          _progressSubscription = state.progressText.listen((text) {
-            setState(() {
-              controllerTextSnapshot = text;
-            });
-          });
+    return BlocBuilder<QuizzesBloc, QuizzesState>(
+      builder: (context, state) {
+        final isGenerating = state is QuizGenerationInProgress;
+        if (isGenerating) {
+          _shadowController.repeat(reverse: true);
+        } else {
+          _shadowController.stop();
         }
-      },
-      child: AnimatedBuilder(
-        animation: _shadowController,
-        builder: (context, child) {
-          return AnimatedContainer(
-            duration: Durations.medium1,
-            width: isMobile ? sizes.width * 0.9 : sizes.width * 0.6,
-            decoration: BoxDecoration(
-              color: Colors.grey.shade900,
-              borderRadius: BorderRadius.circular(24),
-              boxShadow: [
-                if (isGenerating)
-                  BoxShadow(
-                    color: _colorAnimation.value ?? Colors.pinkAccent,
-                    blurRadius: _blurAnimation.value,
-                  ),
-              ],
-            ),
-            child: Padding(
-              padding: EdgeInsets.all(isMobile ? 2.0 : 8.0),
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      IconButton(
-                        onPressed: isGenerating ? null : addFiles,
-                        icon: const Icon(Icons.add),
-                        tooltip: 'Add files (PDF, images, audio, video)',
-                      ),
-                      Expanded(
-                        child: TextField(
-                          enabled: !isGenerating,
-                          onSubmitted: (_) => generateQuiz(),
-                          controller: controller,
-                          decoration: InputDecoration(
-                            hintText: isGenerating
-                                ? "$controllerTextSnapshot..."
-                                : "Generate me a quiz about...",
-                            border: InputBorder.none,
-                          ),
-                        ),
-                      ),
-                      IconButton.filled(
-                        onPressed: isGenerating ? null : generateQuiz,
-                        icon: const Icon(Icons.send),
-                      ),
-                    ],
-                  ),
-                  if (files.isNotEmpty)
-                    Container(
-                      margin: const EdgeInsets.only(top: 8),
-                      child: SizedBox(
-                        height: 80,
-                        child: GridView.builder(
-                          scrollDirection: Axis.horizontal,
-                          gridDelegate:
-                              const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 1,
-                                childAspectRatio: 4 / 3,
-                                mainAxisSpacing: 4,
-                              ),
-                          itemCount: files.length,
-                          itemBuilder: (context, idx) =>
-                              buildFileBox(files[idx]),
-                        ),
-                      ),
+
+        return AnimatedBuilder(
+          animation: _shadowController,
+          builder: (context, child) {
+            return AnimatedContainer(
+              duration: Durations.medium1,
+              width: isMobile ? sizes.width * 0.9 : sizes.width * 0.6,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade900,
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: [
+                  if (isGenerating)
+                    BoxShadow(
+                      color: _colorAnimation.value ?? Colors.pinkAccent,
+                      blurRadius: _blurAnimation.value,
                     ),
                 ],
               ),
-            ),
-          );
-        },
-      ),
+              child: Padding(
+                padding: EdgeInsets.all(isMobile ? 2.0 : 8.0),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        IconButton(
+                          onPressed: isGenerating ? null : addFiles,
+                          icon: const Icon(Icons.add),
+                          tooltip: 'Add files (PDF, images, audio, video)',
+                        ),
+                        Expanded(
+                          child: TextField(
+                            enabled: !isGenerating,
+                            onSubmitted: (_) => generateQuiz(isGenerating),
+                            controller: controller,
+                            decoration: InputDecoration(
+                              hintText: isGenerating
+                                  ? "$controllerTextSnapshot..."
+                                  : "Generate me a quiz about...",
+                              border: InputBorder.none,
+                            ),
+                          ),
+                        ),
+                        IconButton.filled(
+                          onPressed: isGenerating ? null : () => generateQuiz(isGenerating),
+                          icon: const Icon(Icons.send),
+                        ),
+                      ],
+                    ),
+                    if (files.isNotEmpty)
+                      Container(
+                        margin: const EdgeInsets.only(top: 8),
+                        child: SizedBox(
+                          height: 80,
+                          child: GridView.builder(
+                            scrollDirection: Axis.horizontal,
+                            gridDelegate:
+                                const SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 1,
+                                  childAspectRatio: 4 / 3,
+                                  mainAxisSpacing: 4,
+                                ),
+                            itemCount: files.length,
+                            itemBuilder: (context, idx) =>
+                                buildFileBox(files[idx], () => removeFile(files[idx])),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }

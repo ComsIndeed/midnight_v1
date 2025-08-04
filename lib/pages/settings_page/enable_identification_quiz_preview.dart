@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:midnight_v1/classes/app_prefs.dart';
+import 'package:midnight_v1/services/app_prefs.dart';
 
 class EnableIdentificationQuizPreview extends StatefulWidget {
   const EnableIdentificationQuizPreview({super.key});
@@ -18,9 +18,9 @@ class _EnableIdentificationQuizPreviewState
       subtitle: Text(
         "This is an experimental feature. This was made in just 20 minutes, there are bugs.",
       ),
-      value: AppPrefs.useIdentificationQuestions,
+      value: AppPrefs.instance.useIdentificationQuestions,
       onChanged: (val) {
-        AppPrefs.useIdentificationQuestions = val;
+        AppPrefs.instance.useIdentificationQuestions = val;
         setState(() {});
       },
     );

@@ -3,8 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_displaymode/flutter_displaymode.dart';
 import 'package:midnight_v1/blocs/quiz_page_bloc/quiz_page_bloc.dart';
 import 'package:midnight_v1/blocs/quizzes_bloc/quizzes_bloc.dart';
-import 'package:midnight_v1/classes/app_prefs.dart';
-import 'package:midnight_v1/classes/quiz.dart';
+import 'package:midnight_v1/services/app_prefs.dart';
+import 'package:midnight_v1/models/quiz.dart';
 import 'package:midnight_v1/pages/chats_page/chats_page.dart';
 import 'package:midnight_v1/pages/homepage/homepage.dart';
 import 'package:midnight_v1/pages/quiz_page/quiz_page.dart';
@@ -21,7 +21,8 @@ void main() async {
     await FlutterDisplayMode.setHighRefreshRate();
   }
 
-  final prefs = await AppPrefs().init();
+  await AppPrefs.instance.init();
+  final prefs = await SharedPreferences.getInstance();
   final quizRepository = QuizRepository(prefs);
 
   runApp(

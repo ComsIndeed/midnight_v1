@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:midnight_v1/blocs/quizzes_bloc/quizzes_bloc.dart';
 import 'package:midnight_v1/pages/settings_page/enable_identification_quiz_preview.dart';
 import 'package:midnight_v1/pages/settings_page/gemini_api_key_field.dart';
-import 'package:midnight_v1/classes/app_prefs.dart';
+import 'package:midnight_v1/services/app_prefs.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
@@ -21,9 +21,9 @@ class SettingsPage extends StatelessWidget {
               builder: (context, setState) {
                 return SwitchListTile(
                   title: const Text("Enable Embeddings (for quiz generation)"),
-                  value: AppPrefs.embeddingEnabled,
+                  value: AppPrefs.instance.embeddingEnabled,
                   onChanged: (val) async {
-                    AppPrefs.embeddingEnabled = val;
+                    AppPrefs.instance.embeddingEnabled = val;
                     setState(() {});
                   },
                   subtitle: const Text(

@@ -1,12 +1,12 @@
 import 'dart:math'; // Import for sqrt function
 
 import 'package:google_generative_ai/google_generative_ai.dart';
-import 'package:midnight_v1/classes/app_prefs.dart';
+import 'package:midnight_v1/services/app_prefs.dart';
 
 class Embedding {
   static final model = GenerativeModel(
     model: "gemini-embedding-001",
-    apiKey: AppPrefs.apiKey,
+    apiKey: AppPrefs.instance.apiKey,
   );
 
   /// Calculates the cosine similarity between two embedding vectors.
