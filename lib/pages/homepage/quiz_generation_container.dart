@@ -97,6 +97,7 @@ class _QuizGenerationContainerState extends State<QuizGenerationContainer>
 
   Future<void> generateQuiz(bool isGenerating) async {
     if (isGenerating) return;
+    if (!mounted) return;
     try {
       final fileData = await getFileBytesAndMimeTypes(files);
       final content = Content("user", [
@@ -108,6 +109,7 @@ class _QuizGenerationContainerState extends State<QuizGenerationContainer>
           ),
         ),
       ]);
+      if (!mounted) return;
       context.read<QuizzesBloc>().add(GenerateQuiz(content));
       controllerTextSnapshot = controller.text;
       controller.clear();
@@ -115,10 +117,12 @@ class _QuizGenerationContainerState extends State<QuizGenerationContainer>
         files.clear();
       });
     } catch (e, st) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
-      print("$e\n$st");
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
+      }
+      debugPrint("$e\n$st");
     }
   }
 

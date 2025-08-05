@@ -134,9 +134,9 @@ class MultipleChoiceQuizQuestion extends QuizQuestion {
   MultipleChoiceQuizQuestion({
     required super.question,
     required super.answer,
-    required List<QuizOption> options,
+    required this.options,
     super.questionEmbedding,
-  }) : options = options;
+  });
 
   @override
   Map<String, dynamic> toMap() {

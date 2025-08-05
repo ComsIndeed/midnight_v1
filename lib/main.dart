@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_displaymode/flutter_displaymode.dart';
+import 'package:midnight_v1/blocs/chat_history_bloc/chat_history_bloc.dart';
 import 'package:midnight_v1/blocs/quiz_page_bloc/quiz_page_bloc.dart';
 import 'package:midnight_v1/blocs/quizzes_bloc/quizzes_bloc.dart';
+import 'package:midnight_v1/repositories/chat_history_repository.dart';
 import 'package:midnight_v1/services/app_prefs.dart';
 import 'package:midnight_v1/models/quiz.dart';
-import 'package:midnight_v1/pages/chats_page/chats_page.dart';
+import 'package:midnight_v1/pages/chats_page/chat_page.dart';
 import 'package:midnight_v1/pages/homepage/homepage.dart';
 import 'package:midnight_v1/pages/quiz_page/quiz_page.dart';
 import 'package:midnight_v1/pages/settings_page/settings_page.dart';
@@ -24,6 +26,7 @@ void main() async {
   await AppPrefs.instance.init();
   final prefs = await SharedPreferences.getInstance();
   final quizRepository = QuizRepository(prefs);
+  final chatHistoryRepository = ChatHistoryRepository(prefs: prefs);
 
   runApp(
     MultiRepositoryProvider(
@@ -36,6 +39,11 @@ void main() async {
           BlocProvider(
             create: (context) =>
                 QuizzesBloc(context.read<QuizRepository>())..add(LoadQuizzes()),
+          ),
+          BlocProvider.value(
+            value: ChatHistoryBloc(
+              chatHistoryRepository: chatHistoryRepository,
+            ),
           ),
         ],
         child: const MainApp(),
@@ -53,7 +61,7 @@ class MainApp extends StatelessWidget {
       routes: {
         "/": (context) => const Homepage(),
         "/study": (context) => const StudyPage(),
-        "/chats": (context) => const ChatsPage(),
+        "/chats": (context) => const ChatPage(),
         "/settings": (context) => const SettingsPage(),
         "/quiz": (context) {
           final quiz = ModalRoute.of(context)?.settings.arguments as Quiz;

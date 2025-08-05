@@ -56,6 +56,7 @@ class SettingsPage extends StatelessWidget {
                   ),
                 );
                 if (confirmed == true) {
+                  if (!context.mounted) return;
                   context.read<QuizzesBloc>().add(ClearAllQuizzes());
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('All quizzes cleared.')),

@@ -32,6 +32,7 @@ void showQuizMenuOverlay(
                       quiz.title,
                     );
                     if (newTitle != null && newTitle.isNotEmpty) {
+                      if (!context.mounted) return;
                       context.read<QuizzesBloc>().add(
                             RenameQuiz(quiz, newTitle),
                           );
